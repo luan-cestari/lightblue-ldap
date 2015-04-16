@@ -34,8 +34,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.redhat.lightblue.Response;
 import com.redhat.lightblue.crud.FindRequest;
 import com.redhat.lightblue.crud.InsertionRequest;
-import com.redhat.lightblue.ldap.test.LdapServerExternalResource;
-import com.redhat.lightblue.mongo.test.MongoServerExternalResource;
+import com.redhat.lightblue.ldap.test.AbstractLdapCRUDController;
 import com.unboundid.ldap.sdk.Attribute;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -50,14 +49,7 @@ public class ITCaseLdapCRUDController_Objects_Test extends AbstractLdapCRUDContr
                 new Attribute("objectClass", "organizationalUnit"),
                 new Attribute("ou", "Users")});
 
-        System.setProperty("ldap.host", "localhost");
-        System.setProperty("ldap.port", String.valueOf(LdapServerExternalResource.DEFAULT_PORT));
-        System.setProperty("ldap.database", "test");
         System.setProperty("ldap.personWithAddress.basedn", BASEDB_USERS);
-
-        System.setProperty("mongo.host", "localhost");
-        System.setProperty("mongo.port", String.valueOf(MongoServerExternalResource.DEFAULT_PORT));
-        System.setProperty("mongo.database", "lightblue");
     }
 
     public ITCaseLdapCRUDController_Objects_Test() throws Exception {
@@ -71,7 +63,7 @@ public class ITCaseLdapCRUDController_Objects_Test extends AbstractLdapCRUDContr
 
     @Test
     public void test1PersonWithAddress_Insert() throws Exception {
-        Response response = lightblueFactory.getMediator().insert(
+        Response response = getLightblueFactory().getMediator().insert(
                 createRequest_FromResource(InsertionRequest.class, "./crud/insert/person-with-address-insert-single.json"));
 
         assertNotNull(response);
@@ -88,7 +80,7 @@ public class ITCaseLdapCRUDController_Objects_Test extends AbstractLdapCRUDContr
 
     @Test
     public void test2PersonWithAddress_Find() throws Exception {
-        Response response = lightblueFactory.getMediator().find(
+        Response response = getLightblueFactory().getMediator().find(
                 createRequest_FromResource(FindRequest.class, "./crud/find/person-with-address-find-single.json"));
 
         assertNotNull(response);

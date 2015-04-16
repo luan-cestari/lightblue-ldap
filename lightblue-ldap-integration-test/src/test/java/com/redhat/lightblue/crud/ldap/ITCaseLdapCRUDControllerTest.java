@@ -21,11 +21,11 @@ package com.redhat.lightblue.crud.ldap;
 import static com.redhat.lightblue.test.Assert.assertNoDataErrors;
 import static com.redhat.lightblue.test.Assert.assertNoErrors;
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
-import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadResource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.commons.lang.StringUtils;
@@ -39,9 +39,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.redhat.lightblue.Response;
 import com.redhat.lightblue.crud.FindRequest;
 import com.redhat.lightblue.crud.InsertionRequest;
-import com.redhat.lightblue.ldap.test.LdapServerExternalResource;
-import com.redhat.lightblue.mongo.test.MongoServerExternalResource;
+import com.redhat.lightblue.ldap.test.AbstractLdapCRUDController;
 import com.redhat.lightblue.test.FakeClientIdentification;
+import com.redhat.lightblue.util.test.AbstractJsonNodeTest;
 import com.unboundid.ldap.sdk.Attribute;
 
 /**
@@ -67,15 +67,8 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
                 new Attribute("objectClass", "organizationalUnit"),
                 new Attribute("ou", "Departments")});
 
-        System.setProperty("ldap.host", "localhost");
-        System.setProperty("ldap.port", String.valueOf(LdapServerExternalResource.DEFAULT_PORT));
-        System.setProperty("ldap.database", "test");
         System.setProperty("ldap.person.basedn", BASEDB_USERS);
         System.setProperty("ldap.department.basedn", BASEDB_DEPARTMENTS);
-
-        System.setProperty("mongo.host", "localhost");
-        System.setProperty("mongo.port", String.valueOf(MongoServerExternalResource.DEFAULT_PORT));
-        System.setProperty("mongo.database", "lightblue");
     }
 
     public ITCaseLdapCRUDControllerTest() throws Exception {
@@ -83,7 +76,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
     }
 
     @Override
-    protected JsonNode[] getMetadataJsonNodes() throws Exception {
+    protected JsonNode[] getMetadataJsonNodes() throws IOException {
         return new JsonNode[]{
                 loadJsonNode("./metadata/person-metadata.json"),
                 loadJsonNode("./metadata/department-metadata.json")};
@@ -91,7 +84,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
 
     @Test
     public void series1_phase1_Person_Insert() throws Exception {
-        Response response = lightblueFactory.getMediator().insert(
+        Response response = getLightblueFactory().getMediator().insert(
                 createRequest_FromResource(InsertionRequest.class, "./crud/insert/person-insert-many.json"));
 
         assertNotNull(response);
@@ -108,7 +101,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
 
     @Test
     public void series1_phase2_Person_FindSingle() throws Exception {
-        Response response = lightblueFactory.getMediator().find(
+        Response response = getLightblueFactory().getMediator().find(
                 createRequest_FromResource(FindRequest.class, "./crud/find/person-find-single.json"));
 
         assertNotNull(response);
@@ -125,7 +118,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
 
     @Test
     public void series1_phase2_Person_FindMany() throws Exception {
-        Response response = lightblueFactory.getMediator().find(
+        Response response = getLightblueFactory().getMediator().find(
                 createRequest_FromResource(FindRequest.class, "./crud/find/person-find-many.json"));
 
         assertNotNull(response);
@@ -144,7 +137,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
 
     @Test
     public void series1_phase2_Person_FindMany_WithPagination() throws Exception {
-        Response response = lightblueFactory.getMediator().find(
+        Response response = getLightblueFactory().getMediator().find(
                 createRequest_FromResource(FindRequest.class, "./crud/find/person-find-many-paginated.json"));
 
         assertNotNull(response);
@@ -162,7 +155,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
 
     @Test
     public void series2_phase1_Department_InsertWithRoles() throws Exception {
-        String insert = loadResource("./crud/insert/department-insert-template.json")
+        String insert = AbstractJsonNodeTest.loadResource("./crud/insert/department-insert-template.json")
                 .replaceFirst("#cn", "Marketing")
                 .replaceFirst("#description", "Department devoted to Marketing")
                 .replaceFirst("#members", "\"" + StringUtils.join(Arrays.asList("cn=John Doe," + BASEDB_USERS, "cn=Jane Doe," + BASEDB_USERS), "\",\"") + "\"");
@@ -170,7 +163,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
         InsertionRequest insertRequest = createRequest_FromJsonString(InsertionRequest.class, insert);
         insertRequest.setClientId(new FakeClientIdentification("fakeUser", "admin"));
 
-        Response response = lightblueFactory.getMediator().insert(insertRequest);
+        Response response = getLightblueFactory().getMediator().insert(insertRequest);
 
         assertNotNull(response);
         assertNoErrors(response);
@@ -186,7 +179,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
 
     @Test
     public void series2_phase1_Department_InsertWithInvalidRoles() throws Exception {
-        String insert = loadResource("./crud/insert/department-insert-template.json")
+        String insert = AbstractJsonNodeTest.loadResource("./crud/insert/department-insert-template.json")
                 .replaceFirst("#cn", "HR")
                 .replaceFirst("#description", "Department devoted to HR")
                 .replaceFirst("#members", "\"cn=John Doe," + BASEDB_USERS + "\"");
@@ -194,7 +187,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
         InsertionRequest insertRequest = createRequest_FromJsonString(InsertionRequest.class, insert);
         insertRequest.setClientId(new FakeClientIdentification("fakeUser"));
 
-        Response response = lightblueFactory.getMediator().insert(insertRequest);
+        Response response = getLightblueFactory().getMediator().insert(insertRequest);
 
         assertNotNull(response);
         assertEquals(0, response.getModifiedCount());
@@ -212,7 +205,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
         FindRequest findRequest = createRequest_FromResource(FindRequest.class, "./crud/find/department-find-single.json");
         findRequest.setClientId(new FakeClientIdentification("fakeUser", "admin"));
 
-        Response response = lightblueFactory.getMediator().find(findRequest);
+        Response response = getLightblueFactory().getMediator().find(findRequest);
 
         assertNotNull(response);
         assertNoErrors(response);
@@ -231,7 +224,7 @@ public class ITCaseLdapCRUDControllerTest extends AbstractLdapCRUDController {
         FindRequest findRequest = createRequest_FromResource(FindRequest.class, "./crud/find/department-find-single.json");
         findRequest.setClientId(new FakeClientIdentification("fakeUser"));
 
-        Response response = lightblueFactory.getMediator().find(findRequest);
+        Response response = getLightblueFactory().getMediator().find(findRequest);
 
         assertNotNull(response);
         assertEquals(1, response.getMatchCount());
